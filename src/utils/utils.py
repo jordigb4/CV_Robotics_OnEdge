@@ -16,23 +16,26 @@ def create_yolo_structure(base_path="ycb_processed"):
     Path(f"{base_path}/labels/train").mkdir(parents=True, exist_ok=True)
     Path(f"{base_path}/labels/val").mkdir(parents=True, exist_ok=True)
 
-def save_image_files(orig_folder:str,dest_folder:str,stems:np.array):
+def save_image_files(orig_folder:str,dest_folder:str,stems:np.array,folder_prefix:str):
 
     Path(dest_folder).mkdir(parents=True, exist_ok=True)
 
-    full_orig_path = [os.path.join(orig_folder,stem) + '-color.jpg' for stem in stems]
-    full_dest_path = [os.path.join(dest_folder,stem) + '-color.jpg' for stem in stems]
+    for stem in stems:
+        orig = os.path.join(orig_folder, stem + '-color.jpg')
 
+        # remove -color and prefix folder
+        new_name = f"{folder_prefix}_{stem}.jpg"
+        dest = os.path.join(dest_folder, new_name)
 
-    for orig,dest in zip(full_orig_path,full_dest_path):
         if os.path.isfile(orig):
-            shutil.copy(orig,dest)
+            shutil.copy(orig, dest)
 
     
-def to_yolo_format(orig_folder:str,
-                   dest_folder:str,
-                   stems:np.array,
-                   id_to_class:dict):
+def to_yolo_format(orig_folder: str,
+                   dest_folder: str,
+                   stems: np.array,
+                   id_to_class: dict,
+                   folder_prefix: str):
     
     Path(dest_folder).mkdir(parents=True, exist_ok=True)
 
@@ -48,17 +51,15 @@ def to_yolo_format(orig_folder:str,
 
         h, w = labeled_img.shape
         unique_ids = np.unique(labeled_img)
-        unique_ids = unique_ids[unique_ids != 0]  # remove background
+        unique_ids = unique_ids[unique_ids != 0]
 
         yolo_lines = []
 
         for obj_id in unique_ids:
-
             if str(obj_id) not in id_to_class:
                 continue
 
             class_index = id_to_class[str(obj_id)]
-
             mask = (labeled_img == obj_id).astype(np.uint8)
 
             contours, _ = cv2.findContours(
@@ -68,28 +69,27 @@ def to_yolo_format(orig_folder:str,
             )
 
             for contour in contours:
-
                 if len(contour) < 3:
                     continue
-
                 if cv2.contourArea(contour) < 20:
                     continue
 
                 contour = contour.reshape(-1, 2)
 
-                # Normalize coordinates
                 polygon = []
                 for point in contour:
                     x = point[0] / w
                     y = point[1] / h
                     polygon.extend([x, y])
 
-                if len(polygon) >= 6:  # at least 3 points
+                if len(polygon) >= 6:
                     line = str(class_index) + " " + " ".join(map(str, polygon))
                     yolo_lines.append(line)
-        
-        # Save txt
-        txt_path = os.path.join(dest_folder, stem + ".txt")
+
+        # Save with prefix
+        txt_name = f"{folder_prefix}_{stem}.txt"
+        txt_path = os.path.join(dest_folder, txt_name)
+
         with open(txt_path, "w") as f:
             f.write("\n".join(yolo_lines))
 
@@ -123,13 +123,26 @@ def create_yolo_train_dataset(data_path:str,val_frac:float=0.2) -> None:
         train_instances = np.setdiff1d(stem_files,val_instances,assume_unique=True)
 
         # Save image files 
-        save_image_files(os.path.join(data_path,folder),f'ycb_processed/images/train/{folder}',train_instances)
-        save_image_files(os.path.join(data_path,folder),f'ycb_processed/images/val/{folder}',val_instances)
+        save_image_files(os.path.join(data_path,folder),
+                        'ycb_processed/images/train',
+                        train_instances,
+                        folder)
+        save_image_files(os.path.join(data_path,folder),
+                 'ycb_processed/images/val',
+                 val_instances,
+                 folder)
 
         # Convert label to segmentation
-        to_yolo_format(os.path.join(data_path,folder),f'ycb_processed/labels/train/{folder}',train_instances,id_to_class)
-        to_yolo_format(os.path.join(data_path,folder),f'ycb_processed/labels/val/{folder}',val_instances,id_to_class)
-
+        to_yolo_format(os.path.join(data_path,folder),
+                    'ycb_processed/labels/train',
+                    train_instances,
+                    id_to_class,
+                    folder)      
+        to_yolo_format(os.path.join(data_path,folder),
+                    'ycb_processed/labels/val',
+                    val_instances,
+                    id_to_class,
+                    folder)
 
 def build_votes(data_folder:str) -> Dict:
     votes = defaultdict(lambda: defaultdict(int))

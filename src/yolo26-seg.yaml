@@ -1,0 +1,26 @@
+path: ycb_processed # dataset root dir
+train: images/train # train images (relative to 'path') 4 images
+val: images/val # val images (relative to 'path') 4 images
+
+names:
+  0: master_chef_can
+  1: cracker_box
+  2: sugar_box
+  3: tomato_soup_can
+  4: mustard_bottle
+  5: tuna_fish_can
+  6: pudding_box
+  7: gelatin_box
+  8: potted_meat_can
+  9: banana
+  10: pitcher_base
+  11: bleach_cleanser
+  12: bowl
+  13: mug
+  14: power_drill
+  15: wood_block
+  16: scissors
+  17: large_marker
+  18: large_clamp
+  19: extra_large_clamp
+  20: foam_brick
