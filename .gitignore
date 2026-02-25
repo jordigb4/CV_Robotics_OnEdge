@@ -3,6 +3,16 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+#Dataset
+data/
+ycb_processed/
+src/eda.ipynb
+
+# Models
+model/
+
+# Mac
+.DS_Store
 # C extensions
 *.so
 
